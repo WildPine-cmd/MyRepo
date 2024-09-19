@@ -1,0 +1,95 @@
+
+
+#!/usr/bin/bash
+
+#create new user
+
+checking_root_permissions() {
+	if [ "$(id -u)" != 0 ]
+	then
+		echo root permissions required
+		exit
+	fi
+}
+
+
+banner_greeting() {
+	echo "[>------Welcome!------<]
+
+	"
+}
+
+
+banner_farewell() {
+	echo ""
+	echo ""
+	echo "[>------Finished------<]"
+}
+
+
+username_writing() { #requires new user's name and checks does it in use
+	local user #assign local variables
+	local decision
+	while true #cycle allows type username multiple times in case if typed username does exists
+		do
+			read -p "Print username: " user
+			result=$(cat /etc/passwd | cut -d: -f1 | grep $user) #searchs $user in list of users from /etc/passwd
+			if [ "$result" != "$user" ];
+				then
+					eval "$1=$user" #return $user to creating_users function
+					break
+				else
+					read -p "[-] This user already exists. Do you want write another username? [y/anykey(n)] " decision
+					if [ "$decision" != "y" ];
+						then
+							banner_farewell
+							exit
+					fi
+			fi
+	done
+}
+
+
+groupname_writing() { #requires new user's group and create it if necessary
+	local group #assign local variables
+	local decision
+	read -p "Print group's name for new user: " group
+	result=$(cat /etc/group | cut -d: -f1 | grep $group) #searchs $group in list of groups from /etc/group
+	if [ "$result" == "$group" ];
+		then
+			eval "$1=$group" #return $group to creating_users function
+		else
+			read -p "[-] This group does not exist. Do you want to create it and proceed? [y/anykey(n)] " decision
+			if [ "$decision" == "y" ];
+				then
+					groupadd $group
+					mkdir /home/$group
+					eval "$1=$group"
+			fi
+	fi
+}
+
+
+creating_users() {
+	while true
+		do
+			username_writing username #receiving new user's name
+			groupname_writing groupname #receiving new user's group
+			useradd $username -g $groupname -b /home/$groupname -s /bin/bash #creating new user
+			echo "[+] Done"
+			echo "[!] Please, dont forget to set up password for new user. Use passwd [username]"
+			echo "<---------------------->"
+			read -p "Do you want to create one more user? [y/anykey(n)] " decision
+			if [ "$decision" != "y" ]; 
+				then
+					echo "Finishing"
+					break
+			fi
+	done
+}
+
+
+checking_root_permissions
+banner_greeting
+creating_users
+banner_farewell

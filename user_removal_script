@@ -1,0 +1,73 @@
+
+
+#!/usr/bin/bash
+
+#delete user
+
+checking_root_permissions() {
+	if [ "$(id -u)" != 0 ]
+	then
+		echo root permissions required
+		exit
+	fi
+}
+
+
+banner_greeting() {
+	echo "[>------Welcome!------<]
+
+	"
+}
+
+
+banner_farewell() {
+	echo ""
+	echo ""
+	echo "[>------Finished------<]"
+}
+
+
+username_writing() { #requires user's name and checks does it in use
+	local user
+	local decision
+	while true #cycle allows type username multiple times in case if typed username does not exists
+		do
+			read -p "Print username: " user
+			result=$(cat /etc/passwd | cut -d: -f1 | grep $user) #searchs $user in list of users from /etc/passwd
+			if [ "$result" == "$user" ];
+				then
+					eval "$1=$user" #return $user to creating_users function
+					break
+				else
+					read -p "[-] This user does not exists. Do you want delete another user? [y/anykey(n)]" decision
+					if [ "$decision" != "y" ];
+						then
+							banner_farewell
+							exit
+					fi
+			fi
+	done
+}
+
+
+deleting_users() {
+	while true
+		do
+			username_writing username #receiving user's name
+			userdel $username #deleting user
+			echo "[+] Done"
+			echo "<---------------------->"
+			read -p "Do you want to delete one more user? [y/anykey(n)] " decision
+			if [ "$decision" != "y" ]; 
+				then
+					echo "Finishing"
+					break
+			fi
+	done
+}
+
+
+checking_root_permissions
+banner_greeting
+deleting_users
+banner_farewell
